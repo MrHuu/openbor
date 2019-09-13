@@ -15,7 +15,7 @@
 
 #include "globals.h"
 
-#ifndef WIN
+#if !defined WIN && !defined CTR
 #include <unistd.h>
 #define O_BINARY 0
 #endif
@@ -30,6 +30,11 @@
 
 #ifdef VITA
 #include "types.h"
+#endif
+
+#ifdef CTR
+#include <unistd.h>
+#include "sys/types.h"
 #endif
 
 #define PACKFILE_PATH_MAX 512 // Maximum length of file path string.
@@ -59,6 +64,8 @@ typedef struct fileliststruct
     Image *preview;
 #elif VITA
     s_screen *preview;
+#elif CTR
+    SDL_Surface *preview;
 #endif
 } fileliststruct;
 

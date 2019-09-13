@@ -14058,8 +14058,11 @@ HRESULT openbor_setidle(ScriptVariant **varlist , ScriptVariant **pretvar, int p
 {
     LONG anim = 0, resetable = 0, stalladd = 0;
     entity *e;
-    extern unsigned int _time;
-
+#ifdef CTR
+    extern u32 _time;
+#else
+	extern unsigned int _time;
+#endif
     *pretvar = NULL;
     if(paramCount < 1)
     {
@@ -14321,7 +14324,7 @@ HRESULT openbor_playwebm(ScriptVariant **varlist , ScriptVariant **pretvar, int 
     #ifdef WEBM
         ScriptVariant_ChangeType(*pretvar, VT_INTEGER);
         (*pretvar)->lVal = (LONG)playwebm(StrCache_Get(varlist[0]->strVal), (int)temp);
-    #else
+    #elif defined BUILD_DEBUG
         printf("Skipping video %s; WebM playback not supported on this platform\n");
         *pretvar = NULL;
     #endif

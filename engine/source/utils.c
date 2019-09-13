@@ -24,7 +24,7 @@
 #include <dirent.h>
 #endif
 
-#ifdef SDL
+#if SDL || CTR
 #include <unistd.h>
 #include "sdlport.h"
 #include "savepng.h"
@@ -270,7 +270,7 @@ void writeToLogFile(const char *msg, ...)
 
 void writeToScriptLog(const char *msg)
 {
-#ifndef DC
+#if !( defined (DC) || defined (CTR))
     if(scriptLog == NULL)
     {
         scriptLog = OPEN_LOGFILE(SCRIPT_LOG);
