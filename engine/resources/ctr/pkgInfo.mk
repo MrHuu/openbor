@@ -49,7 +49,7 @@ APP_ICON	:=	$(CURDIR)/resources/ctr/OpenBOR_Icon_48x48.png
 BANNER_IMAGE_FILE	:=	$(CURDIR)/resources/ctr/OpenBOR_Logo_256x128.png
 BANNER_AUDIO_FILE	:=	$(CURDIR)/resources/ctr/audio_silent.wav
 
-# Homebrew Boot animation by PakbloMK7
+# Homebrew Boot animation by PabloMK7
 APP_LOGO	:=	$(CURDIR)/resources/ctr/hb_logo.bin
 
 RSF		:=	$(CURDIR)/resources/ctr/template.rsf
