@@ -28,7 +28,12 @@ void borExit(int reset)
 
 	SDL_Delay(1000);
 	SDL_Quit();
-
+	
+	gspLcdInit();
+	GSPLCD_PowerOnBacklight(GSPLCD_SCREEN_BOTH);
+	gspLcdExit();
+	
+	exit(reset);
 }
 
 aptHookCookie cookie;
@@ -53,7 +58,7 @@ void aptHookFunc(APT_HookType hookType, void *param)
 			gspLcdExit();
 			break;
 		case APTHOOK_ONEXIT:
-			SDL_Quit();
+			borExit(0);
 			break;
 		default:
 			break;
@@ -64,11 +69,6 @@ int main(int argc, char *argv[])
 {
 	
 	aptHook(&cookie, aptHookFunc, NULL);
-
-	char resourcePath[128];
-    strcpy(resourcePath,"sdmc:/3ds/OpenBOR");
-	dirExists(resourcePath, 1);
-    chdir(resourcePath);
 
 	APT_CheckNew3DS(&isN3DS);
 	if(isN3DS)
@@ -81,22 +81,21 @@ int main(int argc, char *argv[])
 	setSystemRam();
 	initSDL();
 
-	gfxFlushBuffers();
+	char resourcePath[128];
+    strcpy(resourcePath,"sdmc:/3ds/OpenBOR");
+	dirExists(resourcePath, 1);
+    chdir(resourcePath);
 
 	packfile_mode(0);
-
 	dirExists(paksDir, 1);
 	dirExists(savesDir, 1);
 	dirExists(logsDir, 1);
 	dirExists(screenShotsDir, 1);
+	
 	Menu();
 	openborMain(argc, argv);
+	
 	borExit(0);
-
-	gspLcdInit();
-	GSPLCD_PowerOnBacklight(GSPLCD_SCREEN_BOTTOM);
-	gspLcdExit();
-
 	return 0;
 }
 

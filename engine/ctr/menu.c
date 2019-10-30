@@ -787,8 +787,7 @@ void Menu()
 				free(filelist);
 				filelist = NULL;
 			}
-			//borExit(0);
-			SDL_Quit();
+			borExit(0);
 		}
 	}
 	getBasePath(packfile, filelist[dListCurrentPosition+dListScrollPosition].filename, 1);
