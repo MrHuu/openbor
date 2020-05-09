@@ -81,6 +81,8 @@ int main(int argc, char *argv[])
 	setSystemRam();
 	initSDL();
 
+	gfxSet3D(true);
+
 	char resourcePath[128];
     strcpy(resourcePath,"sdmc:/3ds/OpenBOR");
 	dirExists(resourcePath, 1);
