@@ -34,7 +34,6 @@
 
 #ifdef CTR
 #include <unistd.h>
-#include "sys/types.h"
 #endif
 
 #define PACKFILE_PATH_MAX 512 // Maximum length of file path string.

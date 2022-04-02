@@ -64,7 +64,7 @@
 
 #ifdef CTR
 #include <stdarg.h>
-#include "sdlport.h"
+#include "ctrport.h"
 #define stricmp strcasecmp
 #define strnicmp strncasecmp
 #endif
@@ -74,13 +74,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #ifndef PP_TEST
-#ifdef CTR 
-#ifdef BUILD_DEBUG
-#define printf writeToLogFile
-#endif
-#else
-#define printf writeToLogFile
-#endif
+//#define printf writeToLogFile
 
 // redefine assert to write to the log file and exit nicely instead of aborting
 #undef assert

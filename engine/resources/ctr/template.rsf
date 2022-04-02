@@ -16,7 +16,7 @@ Option:
   FreeProductCode         : true # Removes limitations on ProductCode
   MediaFootPadding        : false # If true CCI files are created with padding
   EnableCrypt             : $(APP_ENCRYPTED) # Enables encryption for NCCH and CIA
-  EnableCompress          : true # Compresses where applicable (currently only exefs:/.code)
+  EnableCompress          : false # Compresses where applicable (currently only exefs:/.code)
   
 AccessControlInfo:
   CoreVersion                   : 2
@@ -77,8 +77,8 @@ AccessControlInfo:
 
   # New3DS Exclusive Process Settings
   SystemModeExt                 : $(APP_SYSTEM_MODE_EXT) # Legacy(Default)/124MB/178MB  Legacy:Use Old3DS SystemMode
-  CpuSpeed                      : 804MHz # 268MHz(Default)/804MHz
-  EnableL2Cache                 : true # false(default)/true
+  CpuSpeed                      : 268MHz # 268MHz(Default)/804MHz
+  EnableL2Cache                 : false # false(default)/true
   CanAccessCore2                : true
 
   # Virtual Address Mappings

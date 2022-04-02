@@ -24,7 +24,7 @@
 #include <dirent.h>
 #endif
 
-#if SDL || CTR
+#ifdef SDL
 #include <unistd.h>
 #include "sdlport.h"
 #include "savepng.h"
@@ -55,6 +55,12 @@
 typedef void DIR;
 #define opendir(X) ((DIR*)sceIoDopen(X))
 #define closedir(X) sceIoDclose((SceUID)(X))
+#endif
+
+#if CTR
+#include <unistd.h>
+#include "ctrport.h"
+#include "savepng.h"
 #endif
 
 #if ANDROID
@@ -270,7 +276,7 @@ void writeToLogFile(const char *msg, ...)
 
 void writeToScriptLog(const char *msg)
 {
-#if !( defined (DC) || defined (CTR))
+#ifndef DC
     if(scriptLog == NULL)
     {
         scriptLog = OPEN_LOGFILE(SCRIPT_LOG);

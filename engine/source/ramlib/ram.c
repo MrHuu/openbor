@@ -179,10 +179,8 @@ void setSystemRam()
     systemRam = 0x0f000000;
     elfOffset = 0x00000000;
 #elif CTR
-	// 64 MBytes
-    systemRam = 0x14000000 - 0x10000000;
-    elfOffset = 0x10000000;
-	// stackSize = 4 * 1024
+    systemRam = 80 * 1024 * 1024;
+    elfOffset = 0x00000000;
 #else
     elfOffset = 0x00000000;
     stackSize = 0x00000000;

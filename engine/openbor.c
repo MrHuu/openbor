@@ -28915,12 +28915,12 @@ int check_range_target_base(entity *ent, entity *target, s_anim *animation)
     {
         return 0;
     }
-
-//printf("animation: %s\n", animation);
+#if CTR
     if(animation==0x0)
     {
         return 0;
     }
+#endif
 
     // Get positions cast as integers.
     ent_base       = (int)ent->base;
@@ -33667,9 +33667,7 @@ int playRecordedInputs()
             u32 nextsynctime = reckey.synctime;
 
             //time = (u32)reckey.time;
-#ifdef BUILD_DEBUG
             printf("Play recorded inputs: Out of sync! Time: %d, RecTime: %d\n",time,reckey.time);
-#endif
             /*if ( interval != reckey.interval )
             {
                 //interval = (u32)reckey.interval;
@@ -33692,9 +33690,9 @@ int playRecordedInputs()
             if ( playrecstatus->synctime != reckey.synctime )
             {
                 u32 nextsynctime = reckey.synctime;
-#ifdef BUILD_DEBUG
+
                 printf("Play recorded inputs: Out of sync! SyncTime: %d, RecSyncTime: %d\n",playrecstatus->synctime,reckey.synctime);
-#endif
+
                 while( playrecstatus->synctime > reckey.synctime && nextsynctime > 0 ) {
                     memcpy( &reckey, &playrecstatus->buffer[--nextsynctime], sizeof(reckey) );
                 }
@@ -34261,9 +34259,9 @@ void display_credits()
 
         font_printf(col1,  s + v * m, 0, 0, "PS Vita");
         font_printf(col2, s + v * m, 0, 0, "Plombo"); ++m;
-		
-		font_printf(col1,  s + v * m, 0, 0, "3DS");
-        font_printf(col2, s + v * m, 0, 0, "MrHuu"); ++m;
+
+        font_printf(col1,  s + v * m, 0, 0, "3DS");
+        font_printf(col2,  s + v * m, 0, 0, "MrHuu"); ++m;
 
         update(2, 0);
 
@@ -34945,7 +34943,7 @@ void playscene(char *filename)
                 {
                     printf("An error occurred when trying to play the video %s\n", videofile);
                 }
-#elif defined BUILD_DEBUG
+#else
                 printf("Skipping video %s; WebM playback not supported on this platform\n");
 #endif
             }
@@ -37875,11 +37873,11 @@ void menu_options_video()
     while(!quit)
     {
         _menutextm(2, -5, 0, Tr("Video Options"));
-        _menutext((selector == 0), col1, -3, Tr("Brightness"));
+        _menutext((selector == 0), col1, -3, Tr("Brightness:"));
         _menutext((selector == 0), col2, -3, "%i", savedata.brightness);
-        _menutext((selector == 1), col1, -2, Tr("Gamma"));
+        _menutext((selector == 1), col1, -2, Tr("Gamma:"));
         _menutext((selector == 1), col2, -2, "%i", savedata.gamma);
-        _menutext((selector == 2), col1, -1, Tr("Window Offset"));
+        _menutext((selector == 2), col1, -1, Tr("Window Offset:"));
         _menutext((selector == 2), col2, -1, "%i", savedata.windowpos);
 
 #if OPENDINGUX
@@ -38009,25 +38007,26 @@ void menu_options_video()
         }
 #endif
 
-
 #if CTR
-        _menutext((selector == 3), col1, 0, Tr("Display Mode"));
-        _menutext((selector == 3), col2, 0, savedata.fullscreen ? Tr("Scaled") : Tr("Unscaled"));
-
-		_menutext((selector == 4), col1, 1, Tr("Aspect Ratio"));
-        _menutext((selector == 4), col2, 1, (savedata.stretch ? Tr("Stretch to Screen") : Tr("Preserve Aspect Ratio")));
-		
-		_menutextm((selector == 5), 6, 0, Tr("Back"));
+        if ((videomodes.hRes>400) || (videomodes.vRes>240))
+        {
+            _menutext((selector == 3), col1, 0, Tr("Aspect Ratio"));
+            _menutext((selector == 3), col2, 0, Tr("( unavailable )"));
+        }
+        else
+        {
+            _menutext((selector == 3), col1, 0, Tr("Aspect Ratio"));
+            _menutext((selector == 3), col2, 0, (savedata.stretch ? Tr("Stretch to Screen") : Tr("Preserve Aspect Ratio")));
+        }
+        _menutextm((selector == 4), 6, 0, Tr("Back"));
         if(selector < 0)
         {
-            selector = 5;
+            selector = 4;
         }
-        if(selector > 5)
+        if(selector > 4)
         {
             selector = 0;
         }
-
-
 #endif
 
         update((level != NULL), 0);
@@ -38111,24 +38110,26 @@ void menu_options_video()
                 break;
 #if SDL || PSP || WII || CTR
             case 3:
-#if CTR
-				savedata.fullscreen ^= 1;
-#endif
-#if OPENDINGUX || CTR
+#if OPENDINGUX
                 video_fullscreen_flip();
                 break;
 #endif
 
-#if CTR
-
-			case 4:
-#if WII || CTR
-                //    video_stretch((savedata.stretch ^= 1));
-                savedata.stretch ^= 1;
-				video_fullscreen_flip();
+#if WII
+                //video_fullscreen_flip();
+                video_stretch((savedata.stretch ^= 1));
                 break;
 #endif
+
+#if CTR
+                if (!(videomodes.hRes>400) && !(videomodes.vRes>240))
+                {
+                    savedata.stretch ^= 1;
+                    video_fullscreen_flip();
+                }
+                break;
 #endif
+
 #if PSP
                 if(videoMode == 0 || videoMode == 1)
                 {

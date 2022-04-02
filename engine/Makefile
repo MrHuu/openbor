@@ -55,10 +55,8 @@ BUILDING        = 1
 YASM 	        = yasm$(EXTENSION)
 CC              = $(WINDEV)/$(PREFIX)gcc$(EXTENSION)
 INCLUDES        = $(SDKPATH)/include \
-                  $(SDKPATH)/include/SDL2 \
-		  $(EXTRA_INCLUDES)
-LIBRARIES       = $(SDKPATH)/lib \
-		  $(EXTRA_LIBRARIES)
+                  $(SDKPATH)/include/SDL2
+LIBRARIES       = $(SDKPATH)/lib
 ARCHFLAGS       = -m32
 ifeq ($(findstring 86, $(TARGET_ARCH)), 86)
 BUILD_MMX       = 1
@@ -188,21 +186,23 @@ endif
 endif
 
 ifdef BUILD_CTR
-TARGET			= $(VERSION_NAME)
-TARGET_FINAL	= $(VERSION_NAME)
-TARGET_PLATFORM	= CTR
-BUILD_GFX		= 1
-BUILD_TREMOR	= 1
-#BUILD_WEBM		= 1
-BUILDING		= 1
-#BUILD_VERBOSE	= 1
-#BUILD_DEBUG		= 1
-CC				= arm-none-eabi-gcc
-INCLUDES		= $(DEVKITPRO)/libctru/include $(PORTLIBS)/include $(PORTLIBS)/include/SDL
-LIBRARIES		= $(DEVKITPRO)/libctru/lib $(PORTLIBS)/lib
-ARCHFLAGS		= -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft
+TARGET          = $(VERSION_NAME).elf
+TARGET_MAP      = $(VERSION_NAME).map
+TARGET_FINAL    = $(VERSION_NAME)
+TARGET_PLATFORM = CTR
+BUILD_GFX       = 1
+BUILD_TREMOR    = 1
+#BUILD_WEBM     = 1
+BUILDING        = 1
+CC              = arm-none-eabi-gcc
+INCLUDES        = $(DEVKITPRO)/libctru/include \
+                  $(PORTLIBS)/include \
+                  $(PORTLIBS)/include/SDL
+LIBRARIES       = $(DEVKITPRO)/libctru/lib \
+                  $(PORTLIBS)/lib
+ARCHFLAGS       = -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft
 ifeq ($(BUILD_CTR), 0)
-BUILD_DEBUG		= 1
+BUILD_DEBUG     = 1
 endif
 endif
 
@@ -246,13 +246,12 @@ ifdef BUILD_VITA
 INCS           += vita
 endif
 
+ifdef BUILD_CTR
+INCS           += ctr
+endif
 
 ifdef BUILD_SDL
 INCS           += sdl
-endif
-
-ifdef BUILD_CTR
-INCS           += ctr
 endif
 
 ifdef BUILD_LINUX
@@ -405,13 +404,12 @@ GAME_CONSOLE    = vita/control.o                                                
 endif
 
 ifdef BUILD_CTR
-GAME_CONSOLE	= ctr/joysticks.o                                                                   \
-                  ctr/control.o                                                                     \
+GAME_CONSOLE    = ctr/control.o                                                                     \
                   ctr/sblaster.o                                                                    \
                   ctr/timer.o                                                                       \
-                  ctr/sdlport.o                                                                     \
                   ctr/video.o                                                                       \
-                  ctr/menu.o
+                  ctr/menu.o                                                                        \
+                  ctr/ctrport.o
 endif
 
 ifdef BUILD_SDL
@@ -453,7 +451,7 @@ WEBM 	       += source/webmlib/vidplay.o                                        
 endif
 
 
-MAIN            = openbor.o					                                                        \
+MAIN            = openbor.o					                                                \
                   openborscript.o
 
 OBJS            = $(MAIN)                                                                           \
@@ -475,8 +473,8 @@ OBJS            = $(MAIN)                                                       
 #----------------------------------------------------------------------------------------------------
 
 CFLAGS 	       += $(addprefix -I", $(addsuffix ", $(INCS))) $(ARCHFLAGS) -D$(TARGET_PLATFORM)
-CFLAGS 	       += -g -Wall -fsigned-char -std=gnu99
-
+CFLAGS 	       += -g -Werror -fsigned-char -std=gnu99
+#huu removed -Wall
 
 ifndef BUILD_DARWIN
 ifdef BUILD_LINUX
@@ -531,7 +529,8 @@ endif
 
 
 ifdef BUILD_CTR
-CFLAGS         += -D_3DS -specs=3dsx.specs -Wl,-Map,$(notdir $(TARGET).map)
+CFLAGS         += -D_3DS -D__3DS__ -specs=3dsx.specs -Wl,-Map,$(notdir $(TARGET_MAP)) -z muldefs
+CFLAGS         += -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int
 endif
 
 
@@ -603,16 +602,9 @@ endif
 
 ifdef BUILD_SDL
 ifeq ($(findstring DGE, $(SDKPATH)), DGE)
-LIBS           += -lSDL -lts
+LIBS           += -lSDL -lSDL_gfx -lts
 else
-COMMA		=,
-RPATH_LIBS	= $(addprefix -Wl$(COMMA)-rpath$(COMMA),"$(LIBRARIES)")
-LIBS	       += $(RPATH_LIBS) -lSDL2
-
-ifdef CROSSCOMPILE_LINUX_WIN
-LIBS	       += -lsetupapi
-endif
-
+LIBS           += -Wl,-rpath,$(LIBRARIES) -lSDL2 -lSDL2_gfx
 endif
 endif
 
@@ -638,9 +630,11 @@ LIBS           += -lvita2d -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub \
 	              -lSceCommonDialog_stub -lSceAudio_stub -lfreetype -ljpeg
 endif
 
+
 ifdef BUILD_CTR
 LIBS           += -lSDL_gfx -lSDL
 endif
+
 
 ifdef BUILD_STATIC
 LIBS           += -static
@@ -659,10 +653,8 @@ endif
 
 ifdef BUILD_WEBM
 LIBS           += -lvpx
-ifdef CROSSCOMPILE_LINUX_WIN
-LIBS	       += -lpthread
 endif
-endif
+
 
 ifdef BUILD_CTR
 LIBS           += -lpng -lz -lcitro3d -lctru -lm
@@ -781,21 +773,18 @@ all : $(TARGET_FINAL).3dsx $(TARGET_FINAL).cia
 %.o : %.c
 	@echo Compiling 3DS Port: $<...
 	@$(CC) $(CFLAGS) -c $< -o $@
-$(TARGET).elf : $(OBJS) $(RES)
+$(TARGET) : $(OBJS) $(RES)
 	@echo
-	@echo Linking 3DS Port: $(TARGET).elf...
-	@$(CC) $(CFLAGS) -o $(TARGET).elf $(OBJS) $(TARGET_RESOURCE) $(LIBS)
-$(TARGET_FINAL).3dsx : $(TARGET).elf $(TARGET).smdh
-$(TARGET_FINAL).cia : $(TARGET).elf banner.bnr icon.icn
+	@echo Linking 3DS Port: $(TARGET)...
+	@$(CC) $(CFLAGS) -o $(TARGET) $(OBJS) $(TARGET_RESOURCE) $(LIBS)
+$(TARGET_FINAL).3dsx : $(TARGET) $(TARGET_FINAL).smdh
+$(TARGET_FINAL).cia  : $(TARGET) $(TARGET_FINAL).bnr $(TARGET_FINAL).smdh
 	@$(MAKEROM) -f cia -o $(TARGET_FINAL).cia -DAPP_ENCRYPTED=false $(COMMON_MAKEROM_PARAMS)
 	@echo "built ... $(TARGET_FINAL).cia"
-
-banner.bnr : $(BANNER_IMAGE_FILE) $(BANNER_AUDIO_FILE)
-	@$(BANNERTOOL) makebanner $(BANNER_IMAGE_ARG) $(BANNER_AUDIO_ARG) -o banner.bnr > /dev/null
-
-icon.icn : $(APP_ICON)
-	@$(BANNERTOOL) makesmdh -s "$(APP_TITLE)" -l "$(APP_TITLE)" -p "$(APP_AUTHOR)" -i $(APP_ICON) -o icon.icn > /dev/null
-
+$(TARGET_FINAL).bnr  : $(BANNER_IMAGE_FILE) $(BANNER_AUDIO_FILE) $(TARGET_FINAL).smdh
+	@$(BANNERTOOL) makebanner $(BANNER_IMAGE_ARG) $(BANNER_AUDIO_ARG) -o $(TARGET_FINAL).bnr > /dev/null
+$(TARGET_FINAL).smdh : $(APP_ICON)
+	@$(BANNERTOOL) makesmdh -s "$(APP_TITLE)" -l "$(APP_DESCRIPTION)" -p "$(APP_AUTHOR)" -i $(APP_ICON) -o $(TARGET_FINAL).smdh > /dev/null
 endif
 
 #----------------------------------------------------------------------------------------------------
@@ -830,12 +819,12 @@ ifndef BUILD_PSP
 clean-all: clean-releases clean
 
 clean-releases:
-	@if [ -d ./releases ]; then rm -rf ./releases; fi
+	@rm -rf releases/*
 
 clean:
 	@echo
 	@echo "Removing All $(TARGET_PLATFORM) Files..."
-	@rm -f $(TARGET) $(TARGET_FINAL) $(TARGET_MAP) PARAM.SFO param.sfo eboot.bin OpenBOR.velf linkmap *.elf *.3dsx *.cia *.smdh *.map $(OBJS)
+	@rm -f $(TARGET) $(TARGET_FINAL) $(TARGET_MAP) PARAM.SFO param.sfo eboot.bin OpenBOR.velf linkmap $(OBJS) *.3dsx *.cia *.smdh *.bnr
 	@echo Done!
 	@echo
 endif

@@ -7,8 +7,11 @@
  */
  
 #include <unistd.h>
+
+#include <3ds.h>
+
 #include "SDL.h"
-#include "sdlport.h"
+#include "ctrport.h"
 #include "video.h"
 #include "openbor.h"
 #include "soundmix.h"
@@ -21,13 +24,9 @@
 #include "timer.h"
 
 #include "pngdec.h"
-#include "../resources/OpenBOR_Logo_480x272_png.h"
-#include "../resources/OpenBOR_Logo_320x240_png.h"
-#include "../resources/OpenBOR_Menu_480x272_png.h"
-#include "../resources/OpenBOR_Menu_320x240_png.h"
-// CRxTRDude - Added the log screen pngs
-#include "../resources/logviewer_480x272_png.h"
-#include "../resources/logviewer_320x240_png.h"
+
+#include "../resources/ctr/OpenBOR_Logo_400x240_png.h"
+#include "../resources/ctr/OpenBOR_Menu_400x240_png.h"
 
 #include <dirent.h>
 
@@ -43,30 +42,29 @@ static s_screen* logscreen;
 #define RGB16(R,G,B) ((B&0xF8)<<8) | ((G&0xFC)<<3) | (R>>3)
 #define RGB(R,G,B)   (bpp==16?RGB16(R,G,B):RGB32(R,G,B))
 
-#define BLACK		RGB(  0,   0,   0)
-#define WHITE		RGB(255, 255, 255)
-#define RED			RGB(255,   0,   0)
-#define	GREEN		RGB(  0, 255,   0)
-#define BLUE		RGB(  0,   0, 255)
-#define YELLOW		RGB(255, 255,   0)
-#define PURPLE		RGB(255,   0, 255)
-#define ORANGE		RGB(255, 128,   0)
-#define GRAY		RGB(112, 128, 144)
+#define BLACK       RGB(  0,   0,   0)
+#define WHITE       RGB(255, 255, 255)
+#define RED         RGB(255,   0,   0)
+#define GREEN       RGB(  0, 255,   0)
+#define BLUE        RGB(  0,   0, 255)
+#define YELLOW      RGB(255, 255,   0)
+#define PURPLE      RGB(255,   0, 255)
+#define ORANGE      RGB(255, 128,   0)
+#define GRAY        RGB(112, 128, 144)
 #define LIGHT_GRAY  RGB(223, 223, 223)
-#define DARK_RED	RGB(128,   0,   0)
-#define DARK_GREEN	RGB(  0, 128,   0)
-#define DARK_BLUE	RGB(  0,   0, 128)
+#define DARK_GRAY   RGB( 64,  64,  64)
+#define DARK_RED    RGB(128,   0,   0)
+#define DARK_GREEN  RGB(  0, 128,   0)
+#define DARK_BLUE   RGB(  0,   0, 128)
 
 #define LOG_SCREEN_TOP 2
-#define LOG_SCREEN_END (isWide ? 26 : 23)
+#define LOG_SCREEN_END (23)
 
 static int bpp = 32;
-static int isWide = 0;
-static int isFull = 0;
 static int dListTotal;
 static int dListCurrentPosition;
 static int dListScrollPosition;
-static int which_logfile = OPENBOR_LOG;
+//static int which_logfile = OPENBOR_LOG;
 static FILE *bgmFile = NULL;
 static unsigned int bgmPlay = 0, bgmLoop = 0, bgmCycle = 0, bgmCurrent = 0, bgmStatus = 0;
 static fileliststruct *filelist;
@@ -261,35 +259,39 @@ static void printText(int x, int y, int col, int backcol, int fill, char *format
 	}
 }
 
-static s_screen *getPreview(char *filename)
+s_screen *getPreview(char *filename)
 {
+	int width = 142; //preview width
+	int height = 105; //preview height
 	s_screen *title = NULL;
 	s_screen *scale = NULL;
-	// Grab current path and filename
-	getBasePath(packfile, filename, 1);
-	// Create & Load & Scale Image
-	if(!loadscreen("data/bgs/title", packfile, NULL, PIXEL_x8, &title) &&
-	   !loadscreen32("data/bgs/title", packfile, &title))
-	{
-		return NULL;
-	}
-	if((scale = allocscreen(160, 120, title->pixelformat)) == NULL) return NULL;
+	FILE *preview = NULL;
 
-	if (title->pixelformat == PIXEL_32)
+//	char ssPath[MAX_FILENAME_LEN] = "";
+//	getBasePath(ssPath,"ScreenShots/",0); //get screenshots directory from base path
+	char ssPath[MAX_FILENAME_LEN] = "sdmc:/3ds/openbor/screenshots/";
+
+	strncat(ssPath, filename, strrchr(filename, '.') - filename); //remove extension from pak filename
+	strcat(ssPath, " - 0000.png"); //add to end of pak filename
+	preview = fopen(ssPath, "r"); //open preview image
+
+	if(preview) //if preview image found
 	{
-		scalescreen32(scale, title);
-	}
-	else
-	{
-		scalescreen(scale, title);
-	}
-	memcpy(scale->palette, title->palette, PAL_BYTES);
+		fclose(preview); //close preview image
+		strcpy(packfile,"null.file"); //dummy pak file since we are loading outside a pak file
+
+		//Create & Load & Scale Image
+		if(!loadscreen32(ssPath, packfile, &title)) return NULL; //exit if image screen not loaded
+		if((scale = allocscreen(width, height, title->pixelformat)) == NULL) return NULL; //exit if scaled screen not 
+		scalescreen32(scale, title); //copy image to scaled down screen
+	} else { return NULL; }
 
 	// ScreenShots within Menu will be saved as "Menu"
-	strncpy(packfile,"Menu.xxx",MAX_FILENAME_LEN);
+	strncpy(packfile,"Menu.ext",MAX_FILENAME_LEN);
 
-	freescreen(&title);
-	return scale;
+	// Free Images and Terminate FileCaching
+	if(title) freescreen(&title); //free image screen
+	return scale; // return scaled down screen
 }
 
 static void StopBGM()
@@ -311,17 +313,17 @@ static void PlayBGM()
 static int ControlMenu()
 {
 	int status = -1;
-	int dListMaxDisplay = 17;
+	int dListMaxDisplay = 15;
 	bothnewkeys = 0;
 	inputrefresh(0);
 	switch(bothnewkeys)
 	{
 		case FLAG_MOVEUP:
-			dListScrollPosition--;
-			if(dListScrollPosition < 0)
+			dListCurrentPosition--;
+			if((dListCurrentPosition+dListScrollPosition) < dListScrollPosition)
 			{
-				dListScrollPosition = 0;
-				dListCurrentPosition--;
+				dListScrollPosition--;
+				if(dListScrollPosition < 0) dListScrollPosition = 0;
 			}
 			if(dListCurrentPosition < 0) dListCurrentPosition = 0;
 			break;
@@ -337,31 +339,53 @@ static int ControlMenu()
 			break;
 
 		case FLAG_MOVELEFT:
+			dListCurrentPosition = dListCurrentPosition - 5;
+			if((dListCurrentPosition+dListScrollPosition) < dListScrollPosition)
+			{
+				dListScrollPosition = dListScrollPosition - 5;
+				if(dListScrollPosition < 0) dListScrollPosition = 0;
+			}
+			if(dListCurrentPosition < 0) dListCurrentPosition = 0;
 			break;
 
 		case FLAG_MOVERIGHT:
+			dListCurrentPosition = dListCurrentPosition + 5;
+			if(dListCurrentPosition > dListTotal - 5) dListCurrentPosition = dListTotal - 5;
+			if(dListCurrentPosition > dListMaxDisplay)
+	        {
+		        if((dListCurrentPosition+dListScrollPosition) < dListTotal)
+				{
+					dListScrollPosition = dListScrollPosition + 5;
+				} else {
+					dListScrollPosition = dListTotal-(dListMaxDisplay+1);
+				}
+			    dListCurrentPosition = dListMaxDisplay;
+			}
 			break;
 
-		case FLAG_START:
-		case FLAG_ATTACK:
+		case FLAG_START:   // Start
+		case FLAG_ATTACK:  // A
 			// Start Engine!
 			status = 1;
 			break;
 
-		case FLAG_ATTACK2:
-			pControl = ControlBGM;
-			status = -2;
+		case FLAG_ATTACK3: // X
+			//pControl = ControlBGM;
+			//status = -2;
 			break;
 
-		case FLAG_SPECIAL:
-		case FLAG_ESC:
+		case FLAG_ESC:     // Select
 			// Exit Engine!
 			status = 2;
 			break;
 
-		case FLAG_JUMP:
-			//drawLogs();
-			status = 3;
+		case FLAG_JUMP:    // LT
+			break;
+
+		case FLAG_SPECIAL: // RT
+			break;
+
+		case FLAG_ATTACK4: // Y
 			break;
 
 		default:
@@ -375,12 +399,14 @@ static int ControlMenu()
 static int ControlBGM()
 {
 	int status = -2;
-	int dListMaxDisplay = 17;
+	int dListMaxDisplay = 15;
 	bothnewkeys = 0;
 	inputrefresh(0);
 	switch(bothnewkeys)
 	{
 		case FLAG_MOVEUP:
+			pControl = ControlMenu;
+			status = -1;
 			dListScrollPosition--;
 			if(dListScrollPosition < 0)
 			{
@@ -391,6 +417,8 @@ static int ControlBGM()
 			break;
 
 		case FLAG_MOVEDOWN:
+			pControl = ControlMenu;
+			status = -1;
 			dListCurrentPosition++;
 			if(dListCurrentPosition > dListTotal - 1) dListCurrentPosition = dListTotal - 1;
 			if(dListCurrentPosition > dListMaxDisplay)
@@ -432,7 +460,7 @@ static int ControlBGM()
 			}
 			break;
 
-		case FLAG_JUMP:
+		case FLAG_ATTACK3:
 			if(!bgmPlay)
 			{
 				if(bgmCycle) bgmCycle = 0;
@@ -440,7 +468,6 @@ static int ControlBGM()
 			}
 			break;
 
-		case FLAG_SPECIAL:
 		case FLAG_ESC:
 			pControl = ControlMenu;
 			status = -1;
@@ -459,36 +486,31 @@ static void initMenu(int type)
 
 	pixelformat = PIXEL_x8;
 
-	savedata.fullscreen = isFull;
-	video_stretch(savedata.stretch);
-	videomodes.hRes = isWide ? 480 :320;
-	videomodes.vRes = isWide ? 272 :240;
+	videomodes.hRes = 400;
+	videomodes.vRes = 240;
 	videomodes.pixel = pixelbytes[PIXEL_32];
-#ifndef CTR
-	videomodes.hScale = 2.0f;
-	videomodes.vScale = 2.0f;
-	savedata.hwscale = 2.0f;
-	savedata.hwfilter = 1;
-#endif
+
 	vscreen = allocscreen(videomodes.hRes, videomodes.vRes, PIXEL_32);
 
 	video_set_mode(videomodes);
 	// Read Logo or Menu from Array.
 	if(!type)
-		bgscreen = pngToScreen(isWide ? (void*) openbor_logo_480x272_png.data : (void*) openbor_logo_320x240_png.data);
+		bgscreen = pngToScreen((void*) openbor_logo_400x240_png.data);
 	else
-		bgscreen = pngToScreen(isWide ? (void*) openbor_menu_480x272_png.data : (void*) openbor_menu_320x240_png.data);
+		bgscreen = pngToScreen((void*) openbor_menu_400x240_png.data);
+
 	// CRxTRDude - Initialize log screen images
-	logscreen = pngToScreen(isWide ? (void*) logviewer_480x272_png.data : (void*) logviewer_320x240_png.data);
+//	logscreen = pngToScreen((void*) logviewer_480x272_png.data);
 
 	control_init(2);
 	apply_controls();
 
-	sound_init(12);
-    if(!sound_start_playback(16,44100))
-    {
-		printf("menu.c-initMenu - sound_start_playback ERROR\n");
-    }
+// -- HUU Remove audio?
+//	sound_init(12);
+//    if(!sound_start_playback(16,44100))
+//    {
+//		printf("menu.c-initMenu - sound_start_playback ERROR\n");
+//    }
 }
 
 static void termMenu()
@@ -505,9 +527,7 @@ static void termMenu()
 
 static void blit_video_menu(s_screen* vscreen)
 {
-    video_stretch(1); // set to fullscreen
     video_copy_screen(vscreen);
-    video_stretch(savedata.stretch); // reset to saved value
 }
 
 static void drawMenu()
@@ -519,59 +539,53 @@ static void drawMenu()
 	s_screen* Image = NULL;
 
 	putscreen(vscreen,bgscreen,0,0,NULL);
-	if(dListTotal < 1) printText((isWide ? 30 : 8), (isWide ? 33 : 24), RED, 0, 0, "No Mods In Paks Folder!");
+	if(dListTotal < 1) printText(16, 32, RED, 0, 0, "No Mods In Paks Folder!");
 	for(list = 0; list < dListTotal; list++)
 	{
-		if(list < 18)
+		if(list < 16)
 		{
 		    int len = strlen(filelist[list+dListScrollPosition].filename)-4;
 			shift = 0;
 			colors = GRAY;
-			strncpy(listing, "", (isWide ? 44 : 28));
-			if(len < (isWide ? 44 : 28))
+			strncpy(listing, "",38);
+			if(len < 38)
                 safe_strncpy(listing, filelist[list+dListScrollPosition].filename, len);
 			else
-				safe_strncpy(listing, filelist[list+dListScrollPosition].filename, (isWide ? 44 : 28));
+				safe_strncpy(listing, filelist[list+dListScrollPosition].filename, 38);
 			if(list == dListCurrentPosition)
 			{
 				shift = 2;
 				colors = RED;
-				//Image = getPreview(filelist[list+dListScrollPosition].filename);
+				Image = getPreview(filelist[list+dListScrollPosition].filename);
 			}
-			printText((isWide ? 30 : 7) + shift, (isWide ? 33 : 22)+(11*list) , colors, 0, 0, "%s", listing);
+			printText(16 + shift, 32 + (11*list), colors, 0, 0, "%s", listing);
 		}
 	}
 
-	printText((isWide ? 26 : 5), (isWide ? 11 : 4), WHITE, 0, 0, "OpenBoR %s", VERSION);
-	printText((isWide ? 392 : 261),(isWide ? 11 : 4), WHITE, 0, 0, __DATE__);
-		//CRxTRDude - Fix for Android's text - Main menu
-#ifdef CTR
-	printText((isWide ? 23 : 4),(isWide ? 251 : 226), WHITE, 0, 0, "A: Start Game");
-	printText((isWide ? 150 : 84),(isWide ? 251 : 226), WHITE, 0, 0, "X: BGM Player");
-	printText((isWide ? 270 : 164),(isWide ? 251 : 226), WHITE, 0, 0, "Y: View Logs");
-	printText((isWide ? 390 : 244),(isWide ? 251 : 226), WHITE, 0, 0, "Select: Quit");
-#else
-	printText((isWide ? 23 : 4),(isWide ? 251 : 226), WHITE, 0, 0, "%s: Start Game", control_getkeyname(savedata.keys[0][SDID_ATTACK]));
-	printText((isWide ? 150 : 84),(isWide ? 251 : 226), WHITE, 0, 0, "%s: BGM Player", control_getkeyname(savedata.keys[0][SDID_ATTACK2]));
-	printText((isWide ? 270 : 164),(isWide ? 251 : 226), WHITE, 0, 0, "%s: View Logs", control_getkeyname(savedata.keys[0][SDID_JUMP]));
-	printText((isWide ? 390 : 244),(isWide ? 251 : 226), WHITE, 0, 0, "%s: Quit Game", control_getkeyname(savedata.keys[0][SDID_SPECIAL]));
-#endif
-	//CRxTRDude - Fixed the placement of these texts and appropriately changed the site for Chrono Crash
-  printText((isWide ? 320 : 188),(isWide ? 175 : 158), BLACK, 0, 0, "www.chronocrash.com");
-	printText((isWide ? 322 : 190),(isWide ? 185 : 168), BLACK, 0, 0, "www.SenileTeam.com");
+	printText(  5,  9, WHITE, 0, 0, "OpenBoR %sv%s", VERSION, CTR_VERSION);
+	printText(340,  9, WHITE, 0, 0, __DATE__);
+
+	printText(  4,221, WHITE, 0, 0, "A: Start Game");
+	printText(100,221, WHITE, 0, 0, "X: ");
+	printText(206,221, WHITE, 0, 0, "Y: ");
+	printText(312,221, WHITE, 0, 0, "Select: Quit");
+
+	printText(266,152, BLACK, 0, 0, "www.chronocrash.com");
+	printText(269,162, BLACK, 0, 0, "www.SenileTeam.com");
 
 #ifdef SPK_SUPPORTED
-	printText((isWide ? 324 : 192),(isWide ? 191 : 176), DARK_RED, 0, 0, "SecurePAK Edition");
+	printText(192,176, DARK_RED, 0, 0, "SecurePAK Edition");
 #endif
 
 	if(Image)
 	{
-		putscreen(vscreen, Image, isWide ? 286 : 155, isWide ? 32:21, NULL);
-		freescreen(&Image);
+		putbox(240, 28,144,107,DARK_GRAY,vscreen,NULL);
+		putscreen(vscreen, Image,242, 29, NULL);
 	}
 	else
-		printText((isWide ? 288 : 157), (isWide ? 141 : 130), RED, 0, 0, "No Preview Available!");
-
+	{
+		printText(267, 116, GRAY, 0, 0, "No Preview Loaded");
+	}
 	blit_video_menu(vscreen);
 }
 
@@ -585,45 +599,45 @@ static void drawBGMPlayer()
 
 	// Allocate Preview Box for Music Text Info.
 	putscreen(vscreen,bgscreen,0,0,NULL);
-	putbox((isWide ? 286 : 155),(isWide ? 32 : 21),160,120,LIGHT_GRAY,vscreen,NULL);
+	putbox(155, 21,160,120,LIGHT_GRAY,vscreen,NULL);
 
 	for(list=0; list<dListTotal; list++)
 	{
-		if(list < 18)
+		if(list < 16)
 		{
 		    int len = strlen(filelist[list+dListScrollPosition].filename)-4;
 			shift = 0;
 			colors = GRAY;
-			strncpy(listing, "", (isWide ? 44 : 28));
-			if(len < (isWide ? 44 : 28))
+			strncpy(listing, "", 28);
+			if(len < 28)
 				safe_strncpy(listing, filelist[list+dListScrollPosition].filename, len);
 			else
-				safe_strncpy(listing, filelist[list+dListScrollPosition].filename, (isWide ? 44 : 28));
+				safe_strncpy(listing, filelist[list+dListScrollPosition].filename, 28);
 			if(list==dListCurrentPosition) { shift = 2; colors = RED; }
-			printText((isWide ? 30 : 7) + shift, (isWide ? 33 : 22)+(11*list) , colors, 0, 0, "%s", listing);
+			printText(7 + shift, 22+(11*list) , colors, 0, 0, "%s", listing);
 		}
 	}
 
-	printText((isWide ? 26 : 5), (isWide ? 11 : 4), WHITE, 0, 0, "OpenBoR %s", VERSION);
-	printText((isWide ? 392 : 261),(isWide ? 11 : 4), WHITE, 0, 0, __DATE__);
+	printText(  5,  4, WHITE, 0, 0, "OpenBoR %s", VERSION);
+	printText(261,  4, WHITE, 0, 0, __DATE__);
 //CRxTRDude - Fix for Android's text - BGM MODE
 #ifdef CTR
-	printText((isWide ? 23 : 4),(isWide ? 251 : 226), WHITE, 0, 0, "A: %s", bgmPlay ? "Stop" : "Play");
-	printText((isWide ? 150 : 84),(isWide ? 251 : 226), WHITE, 0, 0, "X: %s", bgmLoop ? "Repeat On" : "Repeat Off");
-	printText((isWide ? 270 : 164),(isWide ? 251 : 226), WHITE, 0, 0, "Y: %s", bgmCycle ? "Cycle On" : "Cycle Off");
-	printText((isWide ? 390 : 244),(isWide ? 251 : 226), WHITE, 0, 0, "Select: Exit");
+	printText(  4,226, WHITE, 0, 0, "A: %s", bgmPlay ? "Stop" : "Play");
+	printText( 84,226, WHITE, 0, 0, "X: %s", bgmLoop ? "Repeat On" : "Repeat Off");
+	printText(164,226, WHITE, 0, 0, "Y: %s", bgmCycle ? "Cycle On" : "Cycle Off");
+	printText(244,226, WHITE, 0, 0, "Select: Exit");
 #else
-	printText((isWide ? 23 : 4),(isWide ? 251 : 226), WHITE, 0, 0, "%s: %s", control_getkeyname(savedata.keys[0][SDID_ATTACK]), bgmPlay ? "Stop" : "Play");
-	printText((isWide ? 150 : 84),(isWide ? 251 : 226), WHITE, 0, 0, "%s: %s", control_getkeyname(savedata.keys[0][SDID_ATTACK2]), bgmLoop ? "Repeat On" : "Repeat Off");
-	printText((isWide ? 270 : 164),(isWide ? 251 : 226), WHITE, 0, 0, "%s: %s", control_getkeyname(savedata.keys[0][SDID_JUMP]), bgmCycle ? "Cycle On" : "Cycle Off");
-	printText((isWide ? 390 : 244),(isWide ? 251 : 226), WHITE, 0, 0, "%s: Exit Player", control_getkeyname(savedata.keys[0][SDID_SPECIAL]));
+	printText(  4,226, WHITE, 0, 0, "%s: %s", control_getkeyname(savedata.keys[0][SDID_ATTACK]), bgmPlay ? "Stop" : "Play");
+	printText( 84,226, WHITE, 0, 0, "%s: %s", control_getkeyname(savedata.keys[0][SDID_ATTACK2]), bgmLoop ? "Repeat On" : "Repeat Off");
+	printText(164,226, WHITE, 0, 0, "%s: %s", control_getkeyname(savedata.keys[0][SDID_JUMP]), bgmCycle ? "Cycle On" : "Cycle Off");
+	printText(244,226, WHITE, 0, 0, "%s: Exit Player", control_getkeyname(savedata.keys[0][SDID_SPECIAL]));
 #endif
 	//CRxTRDude - Fixed the placement of these texts and appropriately changed the site for Chrono Crash
-    printText((isWide ? 320 : 188),(isWide ? 175 : 158), BLACK, 0, 0, "www.chronocrash.com");
-	printText((isWide ? 322 : 190),(isWide ? 185 : 168), BLACK, 0, 0, "www.SenileTeam.com");
+    printText(188,158, BLACK, 0, 0, "www.chronocrash.com");
+	printText(190,168, BLACK, 0, 0, "www.SenileTeam.com");
 
 #ifdef SPK_SUPPORTED
-	printText((isWide ? 324 : 192),(isWide ? 191 : 176), DARK_RED, 0, 0, "SecurePAK Edition");
+	printText(192,176, DARK_RED, 0, 0, "SecurePAK Edition");
 #endif
 
 	if(!bgmPlay) bgmCurrent = dListCurrentPosition+dListScrollPosition;
@@ -639,18 +653,18 @@ static void drawBGMPlayer()
 	}
 	if(t1[0]) safe_strncpy(t2, t1, 25);
 	if(a1[0]) safe_strncpy(a2, a1, 25);
-	printText((isWide ? 288 : 157),(isWide ? 35 : 23) + (11 * 0), DARK_RED, 0, 0, "Game: %s", bgmListing);
-	printText((isWide ? 288 : 157),(isWide ? 35 : 23) + (11 * 1), bgmPlay ? DARK_GREEN : DARK_BLUE, 0, 0, "Total Tracks: %d", filelist[bgmCurrent].nTracks-1);
-	printText((isWide ? 288 : 157),(isWide ? 35 : 23) + (11 * 2), bgmPlay ? DARK_GREEN : DARK_BLUE, 0, 0, "Current Track: %d", filelist[bgmCurrent].bgmTrack);
-	printText((isWide ? 288 : 157),(isWide ? 35 : 23) + (11 * 3), bgmPlay ? DARK_GREEN : DARK_BLUE, 0, 0, "File: %s", filelist[bgmCurrent].bgmFileName[filelist[bgmCurrent].bgmTrack]);
-	printText((isWide ? 288 : 157),(isWide ? 35 : 23) + (11 * 4), bgmPlay ? DARK_GREEN : DARK_BLUE, 0, 0, "Track: %s", t2);
-	printText((isWide ? 288 : 157),(isWide ? 35 : 23) + (11 * 5), bgmPlay ? DARK_GREEN : DARK_BLUE, 0, 0, "Artist: %s", a2);
+	printText(157, 23 + (11 * 0), DARK_RED, 0, 0, "Game: %s", bgmListing);
+	printText(157, 23 + (11 * 1), bgmPlay ? DARK_GREEN : DARK_BLUE, 0, 0, "Total Tracks: %d", filelist[bgmCurrent].nTracks-1);
+	printText(157, 23 + (11 * 2), bgmPlay ? DARK_GREEN : DARK_BLUE, 0, 0, "Current Track: %d", filelist[bgmCurrent].bgmTrack);
+	printText(157, 23 + (11 * 3), bgmPlay ? DARK_GREEN : DARK_BLUE, 0, 0, "File: %s", filelist[bgmCurrent].bgmFileName[filelist[bgmCurrent].bgmTrack]);
+	printText(157, 23 + (11 * 4), bgmPlay ? DARK_GREEN : DARK_BLUE, 0, 0, "Track: %s", t2);
+	printText(157, 23 + (11 * 5), bgmPlay ? DARK_GREEN : DARK_BLUE, 0, 0, "Artist: %s", a2);
 
 	blit_video_menu(vscreen);
 }
 
 static void drawLogs()
-{
+{/*
 	int i=which_logfile, j, k, l, done=0;
 	bothkeys = bothnewkeys = 0;
 
@@ -700,14 +714,14 @@ static void drawLogs()
 	    blit_video_menu(vscreen);
 	}
 	drawMenu();
+	*/
 }
 
 static void drawLogo()
 {
     int i;
-    int delay = 500;
+    int delay = 100;
 
-    if(savedata.logo) return;
 	initMenu(0);
 	for(i = 0; i < delay; i++)
     {
@@ -726,9 +740,6 @@ void Menu()
 	dListCurrentPosition = 0;
 	if((dListTotal = findPaks())!=1)
 	{
-		//sortList();
-		getAllLogs();
-		packfile_music_read(filelist, dListTotal);
 		initMenu(1);
 		drawMenu();
 		pControl = ControlMenu;
@@ -775,7 +786,6 @@ void Menu()
                 default:
 					break;
 			}
-
             blit_video_menu(vscreen);
 		}
 		freeAllLogs();

@@ -5,11 +5,12 @@
  *
  * Copyright (c) 2004 - 2014 OpenBOR Team
  */
-
+ 
+#include <3ds.h>
 #include <SDL.h>
+
 #include "timer.h"
 #include "types.h"
-#include "3ds.h"
 
 #define GETTIME_FREQ (1000)
 
@@ -19,11 +20,7 @@ unsigned newticks = 0;
 
 void borTimerInit()
 {
-#ifdef CTR
 	startcounter = svcGetSystemTick();
-#else
-	startcounter = SDL_GetPerformanceCounter();
-#endif
 }
 
 void borTimerExit(){}
@@ -49,7 +46,7 @@ unsigned timer_gettick()
 u64 timer_uticks()
 {
 #ifdef CTR
-	return svcGetSystemTick();
+	return svcGetSystemTick(); // TODO return proper value...
 #else
 	u64 freq = SDL_GetPerformanceFrequency();
 	u64 counter = SDL_GetPerformanceCounter();

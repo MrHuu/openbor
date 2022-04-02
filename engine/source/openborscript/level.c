@@ -2089,9 +2089,7 @@ HRESULT openbor_getlevelproperty(ScriptVariant **varlist , ScriptVariant **pretv
         }
         break;
     default:
-	#ifdef BUILD_DEBUG
         printf("Property is not supported by function getlevelproperty yet. %d\n", varlist[0]->lVal);
-	#endif
         goto getlevelproperty_error;
         break;
     }

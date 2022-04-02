@@ -1,109 +1,103 @@
 /*
  * OpenBOR - http://www.chronocrash.com
  * -----------------------------------------------------------------------
- * All rights reserved, see LICENSE in OpenBOR root for details.
+ * Licensed under a BSD-style license, see LICENSE in OpenBOR root for details.
  *
- * Copyright (c) 2004 - 2014 OpenBOR Team
+ * Copyright (c) 2004 - 2017 OpenBOR Team
  */
 
 #ifndef	CONTROL_H
 #define	CONTROL_H
 
-// Generic control stuff (keyboard+joystick).
-#include <SDL_keysym.h>
-#include "joysticks.h"
+#include <stdint.h>
 
-#ifdef CTR	
-	#define	CONTROL_ESC                 SDLK_ESCAPE
-	#define	CONTROL_DEFAULT1_START		SDLK_RETURN
-	#define	CONTROL_DEFAULT1_UP         SDLK_UP
-	#define	CONTROL_DEFAULT1_DOWN		SDLK_DOWN
-	#define	CONTROL_DEFAULT1_LEFT		SDLK_LEFT
-	#define	CONTROL_DEFAULT1_RIGHT		SDLK_RIGHT
-	#define	CONTROL_DEFAULT1_FIRE1		SDLK_a
-	#define	CONTROL_DEFAULT1_FIRE2		SDLK_x
-	#define	CONTROL_DEFAULT1_FIRE3		SDLK_l
-	#define	CONTROL_DEFAULT1_FIRE4		SDLK_r
-	#define	CONTROL_DEFAULT1_FIRE5		SDLK_b
-	#define	CONTROL_DEFAULT1_FIRE6		SDLK_y
-	#define	CONTROL_DEFAULT1_SCREENSHOT	SDLK_F12
-#else
-	#define	CONTROL_ESC                 SDLK_ESCAPE
-	#define	CONTROL_DEFAULT1_START		SDLK_RETURN
-	#define	CONTROL_DEFAULT1_UP         SDLK_UP
-	#define	CONTROL_DEFAULT1_DOWN		SDLK_DOWN
-	#define	CONTROL_DEFAULT1_LEFT		SDLK_LEFT
-	#define	CONTROL_DEFAULT1_RIGHT		SDLK_RIGHT
-	#define	CONTROL_DEFAULT1_FIRE1		SDLK_a
-	#define	CONTROL_DEFAULT1_FIRE2		SDLK_s
-	#define	CONTROL_DEFAULT1_FIRE3		SDLK_z
-	#define	CONTROL_DEFAULT1_FIRE4		SDLK_x
-	#define	CONTROL_DEFAULT1_FIRE5		SDLK_d
-	#define	CONTROL_DEFAULT1_FIRE6		SDLK_f
-	#define	CONTROL_DEFAULT1_SCREENSHOT	SDLK_F12
-#endif
+#define CTR_DPAD_UP         0x00000001
+#define CTR_DPAD_RIGHT      0x00000002
+#define CTR_DPAD_DOWN       0x00000004
+#define CTR_DPAD_LEFT       0x00000008
+#define CTR_A               0x00000010
+#define CTR_B               0x00000020
+#define CTR_X               0x00000040
+#define CTR_Y               0x00000080
+#define CTR_LEFT_TRIGGER    0x00000100
+#define CTR_RIGHT_TRIGGER   0x00000200
+#define CTR_START           0x00000400
+#define CTR_SELECT          0x00000800
+#define CTR_ZL              0x00001000
+#define CTR_ZR              0x00002000
 
-#define	CONTROL_DEFAULT2_UP			((JOY_LIST_FIRST + 1) + JOY_MAX_INPUTS)
-#define	CONTROL_DEFAULT2_RIGHT		((JOY_LIST_FIRST + 2) + JOY_MAX_INPUTS)
-#define	CONTROL_DEFAULT2_DOWN		((JOY_LIST_FIRST + 3) + JOY_MAX_INPUTS)
-#define	CONTROL_DEFAULT2_LEFT		((JOY_LIST_FIRST + 4) + JOY_MAX_INPUTS)
-#define CONTROL_DEFAULT2_FIRE1		((JOY_LIST_FIRST + 5) + JOY_MAX_INPUTS)
-#define CONTROL_DEFAULT2_FIRE2		((JOY_LIST_FIRST + 6) + JOY_MAX_INPUTS)
-#define	CONTROL_DEFAULT2_FIRE3		((JOY_LIST_FIRST + 7) + JOY_MAX_INPUTS)
-#define	CONTROL_DEFAULT2_FIRE4		((JOY_LIST_FIRST + 8) + JOY_MAX_INPUTS)
-#define	CONTROL_DEFAULT2_FIRE5		((JOY_LIST_FIRST + 9) + JOY_MAX_INPUTS)
-#define	CONTROL_DEFAULT2_FIRE6		((JOY_LIST_FIRST + 10) + JOY_MAX_INPUTS)
-#define CONTROL_DEFAULT2_START		((JOY_LIST_FIRST + 11) + JOY_MAX_INPUTS)
-#define CONTROL_DEFAULT2_SCREENSHOT ((JOY_LIST_FIRST + 12) + JOY_MAX_INPUTS)
+#define	CONTROL_ESC					12
 
-#define	CONTROL_DEFAULT3_UP			((JOY_LIST_FIRST + 1) + (JOY_MAX_INPUTS * 2))
-#define	CONTROL_DEFAULT3_RIGHT		((JOY_LIST_FIRST + 2) + (JOY_MAX_INPUTS * 2))
-#define	CONTROL_DEFAULT3_DOWN		((JOY_LIST_FIRST + 3) + (JOY_MAX_INPUTS * 2))
-#define	CONTROL_DEFAULT3_LEFT		((JOY_LIST_FIRST + 4) + (JOY_MAX_INPUTS * 2))
-#define CONTROL_DEFAULT3_FIRE1		((JOY_LIST_FIRST + 5) + (JOY_MAX_INPUTS * 2))
-#define CONTROL_DEFAULT3_FIRE2		((JOY_LIST_FIRST + 6) + (JOY_MAX_INPUTS * 2))
-#define	CONTROL_DEFAULT3_FIRE3		((JOY_LIST_FIRST + 7) + (JOY_MAX_INPUTS * 2))
-#define	CONTROL_DEFAULT3_FIRE4		((JOY_LIST_FIRST + 8) + (JOY_MAX_INPUTS * 2))
-#define	CONTROL_DEFAULT3_FIRE5		((JOY_LIST_FIRST + 9) + (JOY_MAX_INPUTS * 2))
-#define	CONTROL_DEFAULT3_FIRE6		((JOY_LIST_FIRST + 10) + (JOY_MAX_INPUTS * 2))
-#define CONTROL_DEFAULT3_START		((JOY_LIST_FIRST + 11) + (JOY_MAX_INPUTS * 2))
-#define CONTROL_DEFAULT3_SCREENSHOT ((JOY_LIST_FIRST + 12) + (JOY_MAX_INPUTS * 2))
+#define	CONTROL_DEFAULT1_UP			1
+#define	CONTROL_DEFAULT1_RIGHT		2
+#define	CONTROL_DEFAULT1_DOWN		3
+#define	CONTROL_DEFAULT1_LEFT		4
+#define CONTROL_DEFAULT1_FIRE1		5
+#define CONTROL_DEFAULT1_FIRE2		6
+#define	CONTROL_DEFAULT1_FIRE3		7
+#define	CONTROL_DEFAULT1_FIRE4		8
+#define	CONTROL_DEFAULT1_FIRE5		9
+#define	CONTROL_DEFAULT1_FIRE6		10
+#define CONTROL_DEFAULT1_START		11
+#define CONTROL_DEFAULT1_SCREENSHOT 14
 
-#define	CONTROL_DEFAULT4_UP			((JOY_LIST_FIRST + 1) + (JOY_MAX_INPUTS * 3))
-#define	CONTROL_DEFAULT4_RIGHT		((JOY_LIST_FIRST + 2) + (JOY_MAX_INPUTS * 3))
-#define	CONTROL_DEFAULT4_DOWN		((JOY_LIST_FIRST + 3) + (JOY_MAX_INPUTS * 3))
-#define	CONTROL_DEFAULT4_LEFT		((JOY_LIST_FIRST + 4) + (JOY_MAX_INPUTS * 3))
-#define CONTROL_DEFAULT4_FIRE1		((JOY_LIST_FIRST + 5) + (JOY_MAX_INPUTS * 3))
-#define CONTROL_DEFAULT4_FIRE2		((JOY_LIST_FIRST + 6) + (JOY_MAX_INPUTS * 3))
-#define	CONTROL_DEFAULT4_FIRE3		((JOY_LIST_FIRST + 7) + (JOY_MAX_INPUTS * 3))
-#define	CONTROL_DEFAULT4_FIRE4		((JOY_LIST_FIRST + 8) + (JOY_MAX_INPUTS * 3))
-#define	CONTROL_DEFAULT4_FIRE5		((JOY_LIST_FIRST + 9) + (JOY_MAX_INPUTS * 3))
-#define	CONTROL_DEFAULT4_FIRE6		((JOY_LIST_FIRST + 10) + (JOY_MAX_INPUTS * 3))
-#define CONTROL_DEFAULT4_START		((JOY_LIST_FIRST + 11) + (JOY_MAX_INPUTS * 3))
-#define CONTROL_DEFAULT4_SCREENSHOT ((JOY_LIST_FIRST + 12) + (JOY_MAX_INPUTS * 3))
+#define	CONTROL_DEFAULT2_UP			(1+18)
+#define	CONTROL_DEFAULT2_RIGHT		(2+18)
+#define	CONTROL_DEFAULT2_DOWN		(3+18)
+#define	CONTROL_DEFAULT2_LEFT		(4+18)
+#define CONTROL_DEFAULT2_FIRE1		(7+18)
+#define CONTROL_DEFAULT2_FIRE2		(6+18)
+#define	CONTROL_DEFAULT2_FIRE3		(9+18)
+#define	CONTROL_DEFAULT2_FIRE4		(10+18)
+#define	CONTROL_DEFAULT2_FIRE5		(5+18)
+#define	CONTROL_DEFAULT2_FIRE6		(8+18)
+#define CONTROL_DEFAULT2_START		(11+18)
+#define CONTROL_DEFAULT2_SCREENSHOT (12+18)
 
-#define JOYBUTTON(index, btn) (1 + i * JOY_MAX_INPUTS + btn)
-#define JOYAXIS(index, axis, dir) (JOYBUTTON(index, joysticks[index].NumButtons) + 2 * axis + dir)
+#define	CONTROL_DEFAULT3_UP			(1+(18*2))
+#define	CONTROL_DEFAULT3_RIGHT		(2+(18*2))
+#define	CONTROL_DEFAULT3_DOWN		(3+(18*2))
+#define	CONTROL_DEFAULT3_LEFT		(4+(18*2))
+#define CONTROL_DEFAULT3_FIRE1		(7+(18*2))
+#define CONTROL_DEFAULT3_FIRE2		(6+(18*2))
+#define	CONTROL_DEFAULT3_FIRE3		(9+(18*2))
+#define	CONTROL_DEFAULT3_FIRE4		(10+(18*2))
+#define	CONTROL_DEFAULT3_FIRE5		(5+(18*2))
+#define	CONTROL_DEFAULT3_FIRE6		(8+(18*2))
+#define CONTROL_DEFAULT3_START		(11+(18*2))
+#define CONTROL_DEFAULT3_SCREENSHOT (12+(18*2))
 
+#define	CONTROL_DEFAULT4_UP			(1+(18*3))
+#define	CONTROL_DEFAULT4_RIGHT		(2+(18*3))
+#define	CONTROL_DEFAULT4_DOWN		(3+(18*3))
+#define	CONTROL_DEFAULT4_LEFT		(4+(18*3))
+#define CONTROL_DEFAULT4_FIRE1		(7+(18*3))
+#define CONTROL_DEFAULT4_FIRE2		(6+(18*3))
+#define	CONTROL_DEFAULT4_FIRE3		(9+(18*3))
+#define	CONTROL_DEFAULT4_FIRE4		(10+(18*3))
+#define	CONTROL_DEFAULT4_FIRE5		(5+(18*3))
+#define	CONTROL_DEFAULT4_FIRE6		(8+(18*3))
+#define CONTROL_DEFAULT4_START		(11+(18*3))
+#define CONTROL_DEFAULT4_SCREENSHOT (12+(18*3))
 
-typedef struct{
-	int		settings[JOY_MAX_INPUTS];
-	u32		keyflags, newkeyflags;
-	int		kb_break;
-}s_playercontrols;
+typedef struct
+{
+	int	settings[32];
+	unsigned int keyflags, newkeyflags;
+	int kb_break;
+}
+s_playercontrols;
 
 void control_exit();
 void control_init(int joy_enable);
 int control_usejoy(int enable);
 int control_getjoyenabled();
-
+int keyboard_getlastkey();
 void control_setkey(s_playercontrols * pcontrols, unsigned int flag, int key);
 int control_scankey();
-
-char *control_getkeyname(unsigned int keycode);
+char* control_getkeyname(unsigned int keycode);
 void control_update(s_playercontrols ** playercontrols, int numplayers);
 void control_rumble(int port, int ratio, int msec);
-int keyboard_getlastkey();
 
 #endif
 

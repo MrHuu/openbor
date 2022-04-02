@@ -1910,6 +1910,11 @@ HRESULT openbor_getmodelproperty(ScriptVariant **varlist , ScriptVariant **pretv
     return S_OK;
 }
 
+#if CTR
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
+#endif
+
 HRESULT openbor_changemodelproperty(ScriptVariant **varlist , ScriptVariant **pretvar, int paramCount)
 {
     int iArg;
@@ -1999,6 +2004,10 @@ HRESULT openbor_changemodelproperty(ScriptVariant **varlist , ScriptVariant **pr
 
     return S_OK;
 }
+
+#if defined(CTR)
+#pragma GCC pop_options
+#endif
 
 // ===== getentityproperty =====
 enum entityproperty_enum
@@ -14324,7 +14333,7 @@ HRESULT openbor_playwebm(ScriptVariant **varlist , ScriptVariant **pretvar, int 
     #ifdef WEBM
         ScriptVariant_ChangeType(*pretvar, VT_INTEGER);
         (*pretvar)->lVal = (LONG)playwebm(StrCache_Get(varlist[0]->strVal), (int)temp);
-    #elif defined BUILD_DEBUG
+    #else
         printf("Skipping video %s; WebM playback not supported on this platform\n");
         *pretvar = NULL;
     #endif

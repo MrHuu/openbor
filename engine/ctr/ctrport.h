@@ -11,16 +11,11 @@
 
 #include <SDL.h>
 #include <stdint.h>
-#include <stdlib.h>
+//#include <stdlib.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <string.h>
 #include "globals.h"
-
-#if CTR
-#include "3ds.h"
-_Bool isN3DS;
-#endif
 
 #define SDL_FreeVideoSurface(X) SDL_FreeSurface(X)
 #define SDL_FreeAndNullVideoSurface(X) { SDL_FreeSurface(X); X=NULL; }
