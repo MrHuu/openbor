@@ -27,15 +27,25 @@ char savesDir[MAX_FILENAME_LEN]       = {"Saves"};
 char logsDir[MAX_FILENAME_LEN]        = {"Logs"};
 char screenShotsDir[MAX_FILENAME_LEN] = {"ScreenShots"};
 
+void backlightEnable(bool enable, u32 screen)
+{
+	u8 device_model = 0xFF;
+	CFGU_GetSystemModel(&device_model);
+	if (device_model != CFG_MODEL_2DS)
+	{
+		gspLcdInit();
+		enable ? GSPLCD_PowerOnBacklight(screen):GSPLCD_PowerOffBacklight(screen);
+		gspLcdExit();
+	}
+}
 
 void borExit(int reset)
 {
-	gspLcdInit();
-	GSPLCD_PowerOnBacklight(GSPLCD_SCREEN_BOTH);
-	gspLcdExit();
+	backlightEnable(true,GSPLCD_SCREEN_BOTTOM);
 #ifdef CTR_ROMFS
 	romfsExit();
 #endif
+	cfguExit();
 	exit(0);
 }
 
@@ -43,16 +53,11 @@ void aptHookFunc(APT_HookType hookType, void *param)
 {
 	switch (hookType) {
 		case APTHOOK_ONSUSPEND:
-			gspLcdInit();
-			GSPLCD_PowerOnBacklight(GSPLCD_SCREEN_BOTH);
-			gspLcdExit();
-		case APTHOOK_ONSLEEP:
+			backlightEnable(true,GSPLCD_SCREEN_BOTTOM);
 			break;
 		case APTHOOK_ONRESTORE:
 		case APTHOOK_ONWAKEUP:
-			gspLcdInit();
-			GSPLCD_PowerOffBacklight(GSPLCD_SCREEN_BOTTOM);
-			gspLcdExit();
+			backlightEnable(false,GSPLCD_SCREEN_BOTTOM);
 			break;
 		default:
 			break;
@@ -68,9 +73,8 @@ int main(int argc, char *argv[])
 	if(isN3DS)
 		osSetSpeedupEnable(true);
 
-	gspLcdInit();
-	GSPLCD_PowerOffBacklight(GSPLCD_SCREEN_BOTTOM);
-	gspLcdExit();
+	cfguInit();
+	backlightEnable(false,GSPLCD_SCREEN_BOTTOM);
 
 	setSystemRam();
 	initSDL();
